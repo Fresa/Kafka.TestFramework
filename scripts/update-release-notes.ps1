@@ -14,7 +14,7 @@ $releaseNotesAsString = if ($releaseNotes -eq $null) { "" } else { [string]::joi
 
 Write-Host "Release notes: '$($releaseNotesAsString)'"
 
-$path = "$env:APPVEYOR_PROJECT_NAME/$env:APPVEYOR_PROJECT_NAME.csproj"
+$path = "src/$env:APPVEYOR_PROJECT_NAME/$env:APPVEYOR_PROJECT_NAME.csproj"
 [xml]$xml = Get-Content -Path $path
 $xml.GetElementsByTagName("PackageReleaseNotes").set_InnerXML("$releaseNotesAsString")
 Set-Content $path -Value $xml.InnerXml -Force
