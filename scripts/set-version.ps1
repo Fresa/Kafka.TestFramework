@@ -32,6 +32,8 @@ if ($history.builds.Count -eq 2)
     }
     Write-Host "Previous patch version: $previousPatch"
     
+    $patch = $previousPatch + 1
+    
     if ($previousMajor -ne $major)
     {
         if ($major -ne $previousMajor + 1)
@@ -43,8 +45,9 @@ if ($history.builds.Count -eq 2)
         {
             throw "Minor version has to be set to 0 when incrementing major version"
         }
-        
-        Write-Warning "Major version has been changed, resetting build number and version format"
+
+        Write-Warning "Minor version has been changed, setting patch to 0"
+        $patch = 0    
     }
     if ($previousMinor -ne $minor)
     {
@@ -53,13 +56,13 @@ if ($history.builds.Count -eq 2)
             throw "Minor version identity $minor can only be incremented by one in regards to previous minor $previousMinor"
         }
         
-        Write-Warning "Minor version has been changed, resetting build number and version format"
+        Write-Warning "Minor version has been changed, setting patch to 0"
+        $patch = 0
     }
-
-    $patch = $previousPatch + 1
 } else
 {
     # first build
+    Write-Warning "No previous builds found, setting patch to 0"
     $patch = 0
 }
 
