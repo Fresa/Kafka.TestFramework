@@ -46,7 +46,7 @@ if ($history.builds.Count -eq 2)
             throw "Minor version has to be set to 0 when incrementing major version"
         }
 
-        Write-Warning "Minor version has been changed, setting patch to 0"
+        Write-Warning "Major version has been changed, setting patch to 0"
         $patch = 0    
     }
     if ($previousMinor -ne $minor)
