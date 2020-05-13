@@ -4,9 +4,19 @@
     <TargetFramework>netcoreapp3.0</TargetFramework>
     <Nullable>enable</Nullable>
     <WarningsAsErrors>CS8600;CS8601;CS8603;CS8614;CS8618;CS8625</WarningsAsErrors>
+    <PackageReleaseNotes></PackageReleaseNotes>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PackageVersion></PackageVersion>
+    <Authors>Fredrik Arvidsson</Authors>
+    <Company>FKAN Consulting AB</Company>
+    <PackageTags>kafka protocol test</PackageTags>
+    <Description>Framework for testing integrations with Kafka</Description>
+    <RepositoryUrl>https://github.com/Fresa/Kafka.TestFramework</RepositoryUrl>
+    <PackageLicenseUrl>https://github.com/Fresa/Kafka.TestFramework/blob/master/LICENSE</PackageLicenseUrl>
+    <Copyright>Copyright © 2019 Fredrik Arvidsson</Copyright>
+    <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,4 +27,7 @@
     </PackageReference>
   </ItemGroup>
 
+  <PropertyGroup Condition="'$(NCrunch)' == '1'">
+    <EnableSourceControlManagerQueries>false</EnableSourceControlManagerQueries>
+  </PropertyGroup>
 </Project>
