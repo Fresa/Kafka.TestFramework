@@ -1,4 +1,6 @@
 ﻿using System.Threading.Tasks;
+using FluentAssertions;
+using Kafka.Protocol;
 using Xunit;
 using Xunit.Abstractions;
 

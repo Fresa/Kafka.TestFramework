@@ -4,6 +4,7 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
+using Kafka.Protocol;
 
 namespace Kafka.TestFramework
 {

@@ -1,7 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO.Pipelines;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Threading.Tasks;
+using Kafka.Protocol;
+using Kafka.Protocol.Records;
+using Int16 = Kafka.Protocol.Int16;
 
 namespace Kafka.TestFramework.Tests
 {

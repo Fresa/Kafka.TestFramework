@@ -6,10 +6,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using Confluent.Kafka;
 using FluentAssertions;
+using Kafka.Protocol;
 using Log.It;
 using Xunit;
 using Xunit.Abstractions;
+using Int32 = Kafka.Protocol.Int32;
+using Int64 = Kafka.Protocol.Int64;
 using Record = Kafka.Protocol.Records.Record;
+using String = Kafka.Protocol.String;
 
 namespace Kafka.TestFramework.Tests
 {

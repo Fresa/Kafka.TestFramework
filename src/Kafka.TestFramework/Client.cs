@@ -1,7 +1,10 @@
 ﻿using System;
 using System.IO;
+using System.IO.Pipelines;
 using System.Threading;
 using System.Threading.Tasks;
+using Kafka.Protocol;
+using Int32 = Kafka.Protocol.Int32;
 
 namespace Kafka.TestFramework
 {

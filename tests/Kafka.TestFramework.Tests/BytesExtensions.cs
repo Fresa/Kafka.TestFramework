@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using Kafka.Protocol;
 
 namespace Kafka.TestFramework.Tests
 {
