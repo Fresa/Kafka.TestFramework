@@ -1,4 +1,4 @@
-version: 0.0.{build}
+version: '{build}'
 skip_tags: true
 image: Visual Studio 2019
 configuration: Release
@@ -23,7 +23,7 @@ after_test:
 - ps: >-
     scripts/update-release-notes.ps1
 
-    dotnet pack Kafka.Protocol/Kafka.TestFramework.csproj -c %CONFIGURATION% -o nupkgs
+    dotnet pack src/Kafka.TestFramework/Kafka.TestFramework.csproj -c %CONFIGURATION% -o nupkgs
 artifacts:
 - path: nupkgs\*.nupkg
 deploy:

@@ -1,4 +1,5 @@
 $ErrorActionPreference = "Stop"
+Write-Host "Versioning is built on the previous build version which is expected to be in semver format, ex: 1.1.6-alpha"
 $token = $env:appveyor_api_token #should be defined as a secure variable
 $branch = $env:APPVEYOR_REPO_BRANCH
 
@@ -10,28 +11,27 @@ $apiURL = "https://ci.appveyor.com/api/projects/$env:APPVEYOR_ACCOUNT_NAME/$env:
 $history = Invoke-RestMethod -Uri "$apiURL/history?recordsNumber=2" -Headers $headers  -Method Get
 
 $version = (Get-Content .\version)
+Write-Host "Current version specified: $version"        
 [int]$major = $version.Substring(0, $version.IndexOf("."))
 [int]$minor = $version.Substring($version.IndexOf(".") + 1)
-
-$resetBuild = $false
 
 # apply versioning strategy if this is not the first build
 if ($history.builds.Count -eq 2)
 {
     $previousVersion = $history.builds[1].version
+    Write-Host "Previous version: $previousVersion"
     [int]$previousMajor = $previousVersion.Substring(0, $previousVersion.IndexOf("."))
+    Write-Host "Previous major version: $previousMajor"
     [int]$previousMinor = $previousVersion.Substring($previousVersion.IndexOf(".") + 1, $previousVersion.LastIndexOf(".") - ($previousVersion.IndexOf(".") + 1))
+    Write-Host "Previous minor version: $previousMinor"
     # handle suffix, eg. 1.2.3-alpha
     if ([int]$previousVersion.IndexOf("-") -eq -1){
         [int]$previousPatch = $previousVersion.Substring($previousVersion.LastIndexOf(".") + 1)
     } else {
         [int]$previousPatch = $previousVersion.Substring($previousVersion.LastIndexOf(".") + 1, $previousVersion.IndexOf("-")-($previousVersion.LastIndexOf(".") + 1))
     }
+    Write-Host "Previous patch version: $previousPatch"
     
-    Write-Host "Previous version: $previousVersion"
-    Write-Host "Previous major version: $previousMajor"
-    Write-Host "Previous minor version: $previousMinor"
-    Write-Host "Current version specified: $version"
     if ($previousMajor -ne $major)
     {
         if ($major -ne $previousMajor + 1)
@@ -44,7 +44,6 @@ if ($history.builds.Count -eq 2)
             throw "Minor version has to be set to 0 when incrementing major version"
         }
         
-        $resetBuild = $true        
         Write-Warning "Major version has been changed, resetting build number and version format"
     }
     if ($previousMinor -ne $minor)
@@ -55,27 +54,13 @@ if ($history.builds.Count -eq 2)
         }
         
         Write-Warning "Minor version has been changed, resetting build number and version format"
-        $resetBuild = $true
     }
+
+    $patch = $previousPatch + 1
 } else
 {
-    # first build, apply the committed version
-    $resetBuild = $true
-}
-
-if ($resetBuild)
-{
-    $versionFormat="$version.{build}"
-    Write-Warning "Updating build version format to $versionFormat. Please ensure that it is not set in YAML"
-
-    $s = Invoke-RestMethod -Uri "https://ci.appveyor.com/api/projects/$env:APPVEYOR_ACCOUNT_NAME/$env:APPVEYOR_PROJECT_SLUG/settings" -Headers $headers -Method Get
-    $s.settings.versionFormat = $versionFormat
-    
-    #reset current build number to 0 and next one to 1
-    $s.settings.nextBuildNumber = "1"
-    $env:APPVEYOR_BUILD_NUMBER = "0"
-    
-    Invoke-RestMethod -Uri "https://ci.appveyor.com/api/account/$env:APPVEYOR_ACCOUNT_NAME/projects" -Headers $headers  -Body ($s.settings | ConvertTo-Json -Depth 10) -Method Put
+    # first build
+    $patch = 0
 }
 
 $versionSuffix = ""
@@ -84,4 +69,6 @@ if ($branch -ne "master")
     $versionSuffix="-alpha"
 }
 
-Update-AppveyorBuild -Version "$version.$env:APPVEYOR_BUILD_NUMBER$versionSuffix"
+$currentBuildVersion = "$version.$patch$versionSuffix"
+Write-Host "Setting build version to $currentBuildVersion"
+Update-AppveyorBuild -Version "$currentBuildVersion"
