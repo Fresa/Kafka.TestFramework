@@ -30,7 +30,7 @@ namespace Kafka.TestFramework.Tests
                         .WithThrottleTimeMs(Int32.From(100))
                         .WithApiKeysCollection(
                             key => key
-                                .WithIndex(FetchRequest.ApiKey)
+                                .WithApiKey(FetchRequest.ApiKey)
                                 .WithMinVersion(FetchRequest.MinVersion)
                                 .WithMaxVersion(FetchRequest.MaxVersion)));
 
@@ -46,13 +46,15 @@ namespace Kafka.TestFramework.Tests
                         .CreateRequestClientAsync()
                         .ConfigureAwait(false);
 
+                    var message = new ApiVersionsRequest(ApiVersionsRequest.MaxVersion);
                     var requestPayload = new RequestPayload(
-                        new RequestHeader(RequestHeader.MaxVersion)
+                        new RequestHeader(message.HeaderVersion)
                             .WithRequestApiKey(ApiVersionsRequest.ApiKey)
                             .WithRequestApiVersion(
-                                ApiVersionsRequest.MaxVersion)
+                                message.Version)
                             .WithCorrelationId(Int32.From(12)),
-                        new ApiVersionsRequest(ApiVersionsRequest.MaxVersion));
+                        message
+                    );
 
                     await client
                         .SendAsync(requestPayload)
@@ -99,7 +101,7 @@ namespace Kafka.TestFramework.Tests
                 The_subscription_should_receive_a_api_versions_response_with_fetch_request_api_key()
             {
                 _response.Message.As<ApiVersionsResponse>()
-                    .ApiKeysCollection.Should().ContainKey(FetchRequest.ApiKey);
+                    .ApiKeysCollection.Value.Should().ContainKey(FetchRequest.ApiKey);
             }
 
             [Fact]
@@ -107,7 +109,7 @@ namespace Kafka.TestFramework.Tests
                 The_subscription_should_receive_a_api_versions_response_with_fetch_request_api_index()
             {
                 _response.Message.As<ApiVersionsResponse>()
-                    .ApiKeysCollection[FetchRequest.ApiKey].Index.Should()
+                    .ApiKeysCollection[FetchRequest.ApiKey].ApiKey.Should()
                     .Be(FetchRequest.ApiKey);
             }
 

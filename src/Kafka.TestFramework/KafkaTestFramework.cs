@@ -105,8 +105,8 @@ namespace Kafka.TestFramework
                             await client
                                 .SendAsync(
                                     new ResponsePayload(
-                                        requestPayload,
-                                        new ResponseHeader(requestPayload.Header.Version)
+                                        new ResponseHeader(
+                                                Messages.GetResponseHeaderVersionFor(requestPayload))
                                             .WithCorrelationId(requestPayload.Header.CorrelationId),
                                         response),
                                     _cancellationTokenSource.Token)

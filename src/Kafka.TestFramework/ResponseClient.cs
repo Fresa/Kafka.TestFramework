@@ -4,7 +4,7 @@ using Kafka.Protocol;
 
 namespace Kafka.TestFramework
 {
-    internal class ResponseClient : Client<ResponsePayload>
+    internal class ResponseClient : Client
     {
         private ResponseClient(INetworkClient networkClient) : base(networkClient)
         {
@@ -15,6 +15,13 @@ namespace Kafka.TestFramework
             var client = new ResponseClient(networkClient);
             client.StartReceiving();
             return client;
+        }
+
+        internal ValueTask SendAsync(
+            ResponsePayload payload,
+            CancellationToken cancellationToken = default)
+        {
+            return payload.WriteToAsync(NetworkClient, cancellationToken);
         }
 
         internal async Task<RequestPayload> ReadAsync(
