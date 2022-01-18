@@ -61,32 +61,32 @@ namespace Kafka.TestFramework.Tests
                             .WithHost(String.From("localhost"))
                             .WithPort(Int32.From(_testServer.Port)))
                         );
-
-                _testServer.On<ProduceRequest, ProduceResponse>(async request => (await request
-                   .WithActionAsync(produceRequest => Task.Run(async () =>
-                   {
-                       _records = await produceRequest
-                           .ExtractRecordsAsync(CancellationToken.None)
-                           .ToListAsync()
-                           .ConfigureAwait(false);
-                   }))
-                   .ConfigureAwait(false))
-                   .Respond()
-                   .WithResponsesCollection(request.TopicsCollection.Select(topicProduceData =>
-                       new Func<ProduceResponse.TopicProduceResponse,
-                           ProduceResponse.TopicProduceResponse>(
-                           topicProduceResponse =>
-                               topicProduceResponse
-                                   .WithName(topicProduceData.Name)
-                                   .WithPartitionsCollection(topicProduceData.PartitionsCollection.Select(partitionProduceData =>
-                                       new Func<ProduceResponse.TopicProduceResponse.PartitionProduceResponse,
-                                           ProduceResponse.TopicProduceResponse.PartitionProduceResponse>(
-                                           partitionProduceResponse =>
-                                               partitionProduceResponse
-                                                   .WithPartitionIndex(partitionProduceData.PartitionIndex)
-                                                   .WithLogAppendTimeMs(Int64.From(-1))))
-                                       .ToArray())))
-                       .ToArray()));
+                
+                _testServer.On<ProduceRequest, ProduceResponse>(request =>
+                {
+                    _records = request.TopicDataCollection.SelectMany(pair =>
+                        pair.Value.PartitionDataCollection.Where(data => data.Records != null)
+                            .SelectMany(data => data.Records!.Records));
+                    return request
+                        .Respond()
+                        .WithResponsesCollection(request.TopicDataCollection.Select(topicProduceData =>
+                                new Func<ProduceResponse.TopicProduceResponse,
+                                    ProduceResponse.TopicProduceResponse>(
+                                    topicProduceResponse =>
+                                        topicProduceResponse
+                                            .WithName(topicProduceData.Value.Name)
+                                            .WithPartitionResponsesCollection(topicProduceData.Value
+                                                .PartitionDataCollection.Select(partitionProduceData =>
+                                                    new Func<ProduceResponse.TopicProduceResponse.
+                                                        PartitionProduceResponse,
+                                                        ProduceResponse.TopicProduceResponse.PartitionProduceResponse>(
+                                                        partitionProduceResponse =>
+                                                            partitionProduceResponse
+                                                                .WithIndex(partitionProduceData.Index)
+                                                                .WithLogAppendTimeMs(Int64.From(-1))))
+                                                .ToArray())))
+                            .ToArray());
+                });
 
                 return Task.CompletedTask;
             }
@@ -123,7 +123,6 @@ namespace Kafka.TestFramework.Tests
                 {
                     BootstrapServers = $"{host}:{port}",
                     MessageTimeoutMs = 5000,
-                    MetadataRequestTimeoutMs = 5000,
                     SocketTimeoutMs = 30000,
                     Debug = "all"
                 };
