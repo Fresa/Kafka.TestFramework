@@ -20,11 +20,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Kafka.Protocol" Version="1.0.0" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta2-19554-01">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Kafka.Protocol\Kafka.Protocol\Kafka.Protocol.csproj" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(NCrunch)' == '1'">

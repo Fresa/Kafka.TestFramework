@@ -1,10 +1,11 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 using Kafka.Protocol;
+using Int32 = Kafka.Protocol.Int32;
 
 namespace Kafka.TestFramework
 {
-    internal class RequestClient : Client<RequestPayload>, IRequestClient
+    internal class RequestClient : Client, IRequestClient
     {
         private RequestClient(INetworkClient networkClient) : base(networkClient)
         {
@@ -15,6 +16,13 @@ namespace Kafka.TestFramework
             var client = new RequestClient(networkClient);
             client.StartReceiving();
             return client;
+        }
+
+        public ValueTask SendAsync(
+            RequestPayload payload,
+            CancellationToken cancellationToken = default)
+        {
+            return payload.WriteToAsync(NetworkClient, cancellationToken);
         }
 
         public async ValueTask<ResponsePayload> ReadAsync(

@@ -5,9 +5,9 @@ namespace Kafka.TestFramework.Tests
 {
     internal static class BytesExtensions
     {
-        internal static string EncodeToString(this Bytes bytes, Encoding encoding)
+        internal static string EncodeToString(this byte[] bytes, Encoding encoding)
         {
-            return encoding.GetString(bytes.Value);
+            return encoding.GetString(bytes);
         }
     }
 }
