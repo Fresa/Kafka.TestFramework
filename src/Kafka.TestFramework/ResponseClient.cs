@@ -29,7 +29,6 @@ namespace Kafka.TestFramework
         {
             return await RequestPayload
                 .ReadFromAsync(
-                    RequestHeader.MaxVersion,
                     Reader,
                     cancellationToken)
                 .ConfigureAwait(false);

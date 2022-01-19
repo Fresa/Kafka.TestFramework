@@ -117,7 +117,6 @@ namespace Kafka.TestFramework
                             return;
                         }
                     }
-
                 });
             _backgroundTasks.Add(task);
         }
