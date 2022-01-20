@@ -104,6 +104,6 @@ jobs:
     - name: Pack
       env:
           release_notes: ${{ steps.release_notes.outputs.release_notes }}
-      run: dotnet pack Kafka.TestFramework/Kafka.TestFramework.csproj -c Release -o nuget-packages -p:PackageVersion=${{ steps.release.outputs.version }} -p:PackageReleaseNotes="$release_notes"
+      run: dotnet pack src/Kafka.TestFramework/Kafka.TestFramework.csproj -c Release -o nuget-packages -p:PackageVersion=${{ steps.release.outputs.version }} -p:PackageReleaseNotes="$release_notes"
     - name: Publish to nuget.org
       run: dotnet nuget push nuget-packages/Kafka.TestFramework.${{ steps.release.outputs.version }}.nupkg --api-key ${{secrets.NUGET_API_KEY}} --source https://api.nuget.org/v3/index.json
