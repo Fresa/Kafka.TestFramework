@@ -122,8 +122,7 @@ namespace Kafka.TestFramework.Tests
                 })
                 {
                     BootstrapServers = $"{host}:{port}",
-                    MessageTimeoutMs = 15000,
-                    SocketTimeoutMs = 30000,
+                    ApiVersionRequestTimeoutMs = 30000,
                     Debug = "all"
                 };
 
