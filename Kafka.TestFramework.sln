@@ -16,8 +16,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Kafka.TestFramework.Tests",
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Kafka.TestFramework", "src\Kafka.TestFramework\Kafka.TestFramework.csproj", "{161B63C2-B654-4611-AAC8-28B54B5F3C9D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Kafka.Protocol", "..\Kafka.Protocol\Kafka.Protocol\Kafka.Protocol.csproj", "{2317A4BE-9250-4FCE-91B6-B6A7BFD421B7}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Confluent.Kafka.1.1.0.Tests", "tests\Confluent.Kafka.1.1.0.Tests\Confluent.Kafka.1.1.0.Tests.csproj", "{12646283-CC9E-4D45-8E89-F52337C790B6}"
 EndProject
 Global
@@ -34,10 +32,6 @@ Global
 		{161B63C2-B654-4611-AAC8-28B54B5F3C9D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{161B63C2-B654-4611-AAC8-28B54B5F3C9D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{161B63C2-B654-4611-AAC8-28B54B5F3C9D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2317A4BE-9250-4FCE-91B6-B6A7BFD421B7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2317A4BE-9250-4FCE-91B6-B6A7BFD421B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2317A4BE-9250-4FCE-91B6-B6A7BFD421B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2317A4BE-9250-4FCE-91B6-B6A7BFD421B7}.Release|Any CPU.Build.0 = Release|Any CPU
 		{12646283-CC9E-4D45-8E89-F52337C790B6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{12646283-CC9E-4D45-8E89-F52337C790B6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{12646283-CC9E-4D45-8E89-F52337C790B6}.Release|Any CPU.ActiveCfg = Release|Any CPU
