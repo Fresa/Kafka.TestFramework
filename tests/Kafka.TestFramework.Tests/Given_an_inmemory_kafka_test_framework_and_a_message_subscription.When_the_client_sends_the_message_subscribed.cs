@@ -130,13 +130,6 @@ namespace Kafka.TestFramework.Tests
                     .ApiKeysCollection[FetchRequest.ApiKey].MaxVersion.Should()
                     .Be(FetchRequest.MaxVersion);
             }
-
-            protected override async Task TearDownAsync()
-            {
-                await _testServer
-                    .DisposeAsync()
-                    .ConfigureAwait(false);
-            }
         }
     }
 }

@@ -52,7 +52,7 @@ namespace Kafka.TestFramework.Tests
                                                     .WithLeaderId(Int32.From(0))
                                                     .WithPartitionIndex(Int32.From(0))
                                                     .WithReplicaNodesCollection(new[] { Int32.From(0) }))))
-                                .ToArray() ?? new Func<MetadataResponse.MetadataResponseTopic, MetadataResponse.MetadataResponseTopic>[0])
+                                .ToArray() ?? Array.Empty<Func<MetadataResponse.MetadataResponseTopic, MetadataResponse.MetadataResponseTopic>>())
                         .WithControllerId(Int32.From(0))
                         .WithClusterId(String.From("test"))
                         .WithBrokersCollection(broker => broker
@@ -96,7 +96,7 @@ namespace Kafka.TestFramework.Tests
                 await using (_testServer.Start()
                     .ConfigureAwait(false))
                 {
-                    await ProduceMessageFromClientAsync("localhost", _testServer.Port)
+                    await ProduceMessageFromClientAsync("localhost", _testServer.Port, _testServer.Stopping)
                         .ConfigureAwait(false);
                 }
             }
@@ -114,7 +114,7 @@ namespace Kafka.TestFramework.Tests
             }
 
             private static async Task ProduceMessageFromClientAsync(string host,
-                int port)
+                int port, CancellationToken testServerStopping)
             {
                 var producerConfig = new ProducerConfig(new Dictionary<string, string>
                 {
@@ -133,11 +133,11 @@ namespace Kafka.TestFramework.Tests
 
                 var report = await producer
                     .ProduceAsync("my-topic",
-                        new Message<Null, string> { Value = "test" })
+                        new Message<Null, string> { Value = "test" }, testServerStopping)
                     .ConfigureAwait(false);
                 LogFactory.Create("producer").Info("Produce report {@report}", report);
 
-                producer.Flush();
+                producer.Flush(testServerStopping);
             }
         }
     }

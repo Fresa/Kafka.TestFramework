@@ -1,25 +1,23 @@
 ﻿using System;
-using System.IO;
 using System.IO.Pipelines;
 using System.Threading;
 using System.Threading.Tasks;
-using Kafka.Protocol;
-using Int32 = Kafka.Protocol.Int32;
 
 namespace Kafka.TestFramework
 {
     internal abstract class Client : IAsyncDisposable
     {
-        private readonly CancellationTokenSource _cancellationSource = new CancellationTokenSource();
+        private readonly CancellationTokenSource _cancellationSource;
         private readonly Pipe _pipe = new Pipe();
         private readonly INetworkClient _networkClient;
         private Task _sendAndReceiveBackgroundTask = default!;
 
-        protected Client(INetworkClient networkClient)
+        protected Client(INetworkClient networkClient, CancellationToken cancellationToken)
         {
             _networkClient = networkClient;
             NetworkClient = new NetworkStream(networkClient);
             Reader = _pipe.Reader;
+            _cancellationSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         }
 
         protected NetworkStream NetworkClient { get; }

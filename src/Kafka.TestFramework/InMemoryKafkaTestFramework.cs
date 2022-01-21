@@ -26,9 +26,9 @@ namespace Kafka.TestFramework
             var requestClient = new CrossWiredMemoryNetworkClient(first, second);
             var responseClient = new CrossWiredMemoryNetworkClient(second, first);
             await _clients
-                .SendAsync(responseClient, cancellationToken)
+                .SendAsync(responseClient, CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, Stopping).Token)
                 .ConfigureAwait(false);
-            return new DisposableRequestClientDecorator(RequestClient.Start(requestClient), responseClient, second, first);
+            return new DisposableRequestClientDecorator(RequestClient.Start(requestClient, Stopping), responseClient, second, first);
         }
 
         private class DisposableRequestClientDecorator : IRequestClient
