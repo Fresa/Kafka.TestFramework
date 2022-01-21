@@ -8,17 +8,23 @@ using Kafka.Protocol;
 
 namespace Kafka.TestFramework
 {
-    public abstract class KafkaTestFramework : IAsyncDisposable
+    public abstract class KafkaTestFramework
     {
         private readonly INetworkServer _networkServer;
 
         private readonly CancellationTokenSource _cancellationTokenSource =
             new CancellationTokenSource();
+
         private readonly List<Task> _backgroundTasks = new List<Task>();
 
-        private const int Stopped = 0;
-        private const int Started = 1;
-        private int _status = Stopped;
+        private const int HasStopped = 0;
+        private const int HasStarted = 1;
+        private int _status = HasStopped;
+
+        /// <summary>
+        /// Triggered when the test framework is stopping
+        /// </summary>
+        public CancellationToken Stopping => _cancellationTokenSource.Token;
 
         public static InMemoryKafkaTestFramework InMemory()
         {
@@ -47,10 +53,10 @@ namespace Kafka.TestFramework
 
         public IAsyncDisposable Start()
         {
-            var previousStatus = Interlocked.Exchange(ref _status, Started);
-            if (previousStatus == Started)
+            var previousStatus = Interlocked.Exchange(ref _status, HasStarted);
+            if (previousStatus == HasStarted)
             {
-                return this;
+                return new StopOnDispose(this);
             }
 
             var task = Task.Run(
@@ -61,7 +67,7 @@ namespace Kafka.TestFramework
                         try
                         {
                             var client = await _networkServer
-                                .WaitForConnectedClientAsync(_cancellationTokenSource.Token)
+                                .WaitForConnectedClientAsync(Stopping)
                                 .ConfigureAwait(false);
                             ReceiveMessagesFor(client);
                         }
@@ -69,10 +75,15 @@ namespace Kafka.TestFramework
                         {
                             return;
                         }
+                        catch
+                        {
+                            _cancellationTokenSource.Cancel();
+                            throw;
+                        }
                     }
                 });
             _backgroundTasks.Add(task);
-            return this;
+            return new StopOnDispose(this);
         }
 
         private void ReceiveMessagesFor(INetworkClient networkClient)
@@ -80,14 +91,14 @@ namespace Kafka.TestFramework
             var task = Task.Run(
                 async () =>
                 {
-                    var client = ResponseClient.Start(networkClient);
+                    var client = ResponseClient.Start(networkClient, Stopping);
                     await using var _ = client.ConfigureAwait(false);
                     while (_cancellationTokenSource.IsCancellationRequested == false)
                     {
                         try
                         {
                             var requestPayload = await client
-                                .ReadAsync(_cancellationTokenSource.Token)
+                                .ReadAsync(Stopping)
                                 .ConfigureAwait(false);
 
                             if (!_subscriptions.TryGetValue(
@@ -95,29 +106,33 @@ namespace Kafka.TestFramework
                                 out var subscription))
                             {
                                 throw new InvalidOperationException(
-                                   $"Missing subscription for {requestPayload.Message.GetType()}");
+                                    $"Missing subscription for {requestPayload.Message.GetType()}");
                             }
 
                             var response = await subscription(
-                                requestPayload.Message, 
-                                _cancellationTokenSource.Token);
+                                requestPayload.Message,
+                                Stopping);
 
                             await client
                                 .SendAsync(
                                     new ResponsePayload(
-                                        requestPayload,
-                                        new ResponseHeader(requestPayload.Header.Version)
+                                        new ResponseHeader(
+                                                Messages.GetResponseHeaderVersionFor(requestPayload))
                                             .WithCorrelationId(requestPayload.Header.CorrelationId),
                                         response),
-                                    _cancellationTokenSource.Token)
+                                    Stopping)
                                 .ConfigureAwait(false);
                         }
                         catch when (_cancellationTokenSource.IsCancellationRequested)
                         {
                             return;
                         }
+                        catch
+                        {
+                            _cancellationTokenSource.Cancel();
+                            throw;
+                        }
                     }
-
                 });
             _backgroundTasks.Add(task);
         }
@@ -164,11 +179,20 @@ namespace Kafka.TestFramework
             return this;
         }
 
-        public async ValueTask DisposeAsync()
+        internal sealed class StopOnDispose : IAsyncDisposable
         {
-            _cancellationTokenSource.Cancel();
+            private readonly KafkaTestFramework _testFramework;
 
-            await Task.WhenAll(_backgroundTasks);
+            public StopOnDispose(KafkaTestFramework testFramework)
+            {
+                _testFramework = testFramework;
+            }
+            public async ValueTask DisposeAsync()
+            {
+                _testFramework._cancellationTokenSource.Cancel();
+                await Task.WhenAll(_testFramework._backgroundTasks)
+                    .ConfigureAwait(false);
+            }
         }
     }
 }

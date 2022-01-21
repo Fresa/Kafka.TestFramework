@@ -122,7 +122,8 @@ namespace Kafka.TestFramework.Tests
                 })
                 {
                     BootstrapServers = $"{host}:{port}",
-                    ApiVersionRequestTimeoutMs = 30000,
+                    MessageTimeoutMs = 5000,
+                    SocketTimeoutMs = 30000,
                     Debug = "all"
                 };
 
@@ -133,7 +134,7 @@ namespace Kafka.TestFramework.Tests
 
                 var report = await producer
                     .ProduceAsync("my-topic",
-                        new Message<Null, string> { Value = "test" }, testServerStopping)
+                        new Message<Null, string> { Value = "test" })
                     .ConfigureAwait(false);
                 LogFactory.Create("producer").Info("Produce report {@report}", report);
 

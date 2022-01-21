@@ -1,71 +1,28 @@
 ﻿using System;
-using System.IO;
 using System.IO.Pipelines;
 using System.Threading;
 using System.Threading.Tasks;
-using Kafka.Protocol;
-using Int32 = Kafka.Protocol.Int32;
 
 namespace Kafka.TestFramework
 {
-    internal abstract class Client<TSendPayload> : IAsyncDisposable
-        where TSendPayload : IPayload
+    internal abstract class Client : IAsyncDisposable
     {
-        private readonly CancellationTokenSource _cancellationSource = new CancellationTokenSource();
+        private readonly CancellationTokenSource _cancellationSource;
         private readonly Pipe _pipe = new Pipe();
         private readonly INetworkClient _networkClient;
         private Task _sendAndReceiveBackgroundTask = default!;
 
-        protected Client(INetworkClient networkClient)
+        protected Client(INetworkClient networkClient, CancellationToken cancellationToken)
         {
             _networkClient = networkClient;
-            Reader = new KafkaReader(_pipe.Reader);
+            NetworkClient = new NetworkStream(networkClient);
+            Reader = _pipe.Reader;
+            _cancellationSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         }
 
-        protected IKafkaReader Reader { get; }
-
-        public async ValueTask SendAsync(
-            TSendPayload payload,
-            CancellationToken cancellationToken = default)
-        {
-            var buffer = new MemoryStream();
-            await using var _ = buffer.ConfigureAwait(false);
-            var writer = new KafkaWriter(buffer);
-            await using (writer.ConfigureAwait(false))
-            {
-                await payload
-                    .WriteToAsync(writer, cancellationToken)
-                    .ConfigureAwait(false);
-            }
-
-            var lengthBuffer = new MemoryStream();
-            await using (lengthBuffer
-                .ConfigureAwait(false))
-            {
-                var lengthWriter = new KafkaWriter(lengthBuffer);
-                await using (lengthWriter.ConfigureAwait(false))
-                {
-                    await lengthWriter
-                        .WriteInt32Async(Int32.From((int)buffer.Length), cancellationToken)
-                        .ConfigureAwait(false);
-                }
-
-                await _networkClient.SendAsync(
-                        lengthBuffer
-                            .GetBuffer()
-                            .AsMemory()
-                            .Slice(0, (int)lengthBuffer.Length),
-                        cancellationToken)
-                    .ConfigureAwait(false);
-            }
-            
-            await _networkClient.SendAsync(
-                    buffer.GetBuffer().AsMemory()
-                        .Slice(0, (int)buffer.Length),
-                    cancellationToken)
-                .ConfigureAwait(false);
-        }
-
+        protected NetworkStream NetworkClient { get; }
+        protected PipeReader Reader { get; }
+        
         protected void StartReceiving()
         {
             _sendAndReceiveBackgroundTask = Task.Run(

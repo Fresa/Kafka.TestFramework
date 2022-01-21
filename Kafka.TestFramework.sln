@@ -1,20 +1,23 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30011.22
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{0EEC4A41-7C67-4580-8A21-BFA01B2415F1}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{93A69F6A-D895-4A0E-9241-655EF7A9EEDA}"
 	ProjectSection(SolutionItems) = preProject
-		appveyor.yml = appveyor.yml
+		.github\workflows\ci.yml = .github\workflows\ci.yml
+		.github\CODEOWNERS = .github\CODEOWNERS
 		README.md = README.md
-		version = version
+		.github\version_config.yml = .github\version_config.yml
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Kafka.TestFramework.Tests", "tests\Kafka.TestFramework.Tests\Kafka.TestFramework.Tests.csproj", "{FCFCC73C-B0A6-4D4E-A765-9A94303D00AD}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Kafka.TestFramework", "src\Kafka.TestFramework\Kafka.TestFramework.csproj", "{161B63C2-B654-4611-AAC8-28B54B5F3C9D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Confluent.Kafka.1.1.0.Tests", "tests\Confluent.Kafka.1.1.0.Tests\Confluent.Kafka.1.1.0.Tests.csproj", "{12646283-CC9E-4D45-8E89-F52337C790B6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -30,12 +33,17 @@ Global
 		{161B63C2-B654-4611-AAC8-28B54B5F3C9D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{161B63C2-B654-4611-AAC8-28B54B5F3C9D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{161B63C2-B654-4611-AAC8-28B54B5F3C9D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{12646283-CC9E-4D45-8E89-F52337C790B6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{12646283-CC9E-4D45-8E89-F52337C790B6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{12646283-CC9E-4D45-8E89-F52337C790B6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{12646283-CC9E-4D45-8E89-F52337C790B6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{FCFCC73C-B0A6-4D4E-A765-9A94303D00AD} = {0EEC4A41-7C67-4580-8A21-BFA01B2415F1}
+		{12646283-CC9E-4D45-8E89-F52337C790B6} = {0EEC4A41-7C67-4580-8A21-BFA01B2415F1}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B432BD60-300C-4955-9D44-011413D52F2D}

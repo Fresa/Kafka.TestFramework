@@ -4,17 +4,25 @@ using Kafka.Protocol;
 
 namespace Kafka.TestFramework
 {
-    internal class ResponseClient : Client<ResponsePayload>
+    internal class ResponseClient : Client
     {
-        private ResponseClient(INetworkClient networkClient) : base(networkClient)
+        private ResponseClient(INetworkClient networkClient, CancellationToken cancellationToken) : 
+            base(networkClient, cancellationToken)
         {
         }
 
-        internal static ResponseClient Start(INetworkClient networkClient)
+        internal static ResponseClient Start(INetworkClient networkClient, CancellationToken cancellationToken)
         {
-            var client = new ResponseClient(networkClient);
+            var client = new ResponseClient(networkClient, cancellationToken);
             client.StartReceiving();
             return client;
+        }
+
+        internal ValueTask SendAsync(
+            ResponsePayload payload,
+            CancellationToken cancellationToken = default)
+        {
+            return payload.WriteToAsync(NetworkClient, cancellationToken);
         }
 
         internal async Task<RequestPayload> ReadAsync(
@@ -22,7 +30,6 @@ namespace Kafka.TestFramework
         {
             return await RequestPayload
                 .ReadFromAsync(
-                    RequestHeader.MaxVersion,
                     Reader,
                     cancellationToken)
                 .ConfigureAwait(false);
