@@ -7,9 +7,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{0EEC4A41
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{93A69F6A-D895-4A0E-9241-655EF7A9EEDA}"
 	ProjectSection(SolutionItems) = preProject
-		appveyor.yml = appveyor.yml
+		.github\workflows\ci.yml = .github\workflows\ci.yml
+		.github\CODEOWNERS = .github\CODEOWNERS
 		README.md = README.md
-		version = version
+		.github\version_config.yml = .github\version_config.yml
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Kafka.TestFramework.Tests", "tests\Kafka.TestFramework.Tests\Kafka.TestFramework.Tests.csproj", "{FCFCC73C-B0A6-4D4E-A765-9A94303D00AD}"
