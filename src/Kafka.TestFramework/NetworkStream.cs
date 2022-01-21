@@ -38,10 +38,8 @@ namespace Kafka.TestFramework
             throw new System.NotImplementedException();
         }
 
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = new CancellationToken())
-        {
-            return new ValueTask(_networkClient.SendAsync(buffer, cancellationToken).AsTask());
-        }
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = new CancellationToken()) => 
+            _networkClient.SendAsync(buffer, cancellationToken).AsValueTask();
 
         public override bool CanRead => false;
         public override bool CanSeek => false;

@@ -13,5 +13,8 @@ namespace Kafka.TestFramework
                         valueTask
                             => !valueTask.IsCompletedSuccessfully)
                     .Select(valueTask => valueTask.AsTask()));
+
+        internal static ValueTask AsValueTask<T>(this ValueTask<T> valueTask) => 
+            valueTask.IsCompletedSuccessfully ? default : new ValueTask(valueTask.AsTask());
     }
 }
