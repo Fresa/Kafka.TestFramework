@@ -29,7 +29,7 @@ namespace Kafka.TestFramework.Tests
         }
 
         protected CancellationToken TimeoutCancellationToken =>
-            new CancellationTokenSource(TimeSpan.FromSeconds(10)).Token;
+            new CancellationTokenSource(TimeSpan.FromSeconds(20)).Token;
 
         protected virtual Task TearDownAsync()
         {
