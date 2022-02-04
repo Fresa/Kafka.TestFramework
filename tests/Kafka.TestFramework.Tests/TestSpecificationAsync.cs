@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
 using Log.It;
 using Log.It.With.NLog;
 using Microsoft.Extensions.Configuration;
@@ -25,6 +27,9 @@ namespace Kafka.TestFramework.Tests
         {
             NLogCapturingTarget.Subscribe += TestOutputHelper.WriteLine;
         }
+
+        protected CancellationToken TimeoutCancellationToken =>
+            new CancellationTokenSource(TimeSpan.FromSeconds(5)).Token;
 
         protected virtual Task TearDownAsync()
         {

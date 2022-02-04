@@ -10,7 +10,18 @@ namespace Kafka.TestFramework.Tests
             IProducer<TKey, TValue> producer, LogMessage logMessage)
         {
             var logger = LogFactory.Create(producer.GetType().GetPrettyName());
+            UseLogIt(logger, logMessage);
+        }
 
+        internal static void UseLogIt<TKey, TValue>(
+            IConsumer<TKey, TValue> consumer, LogMessage logMessage)
+        {
+            var logger = LogFactory.Create(consumer.GetType().GetPrettyName());
+            UseLogIt(logger, logMessage);
+        }
+
+        private static void UseLogIt(ILogger logger, LogMessage logMessage)
+        {
             switch (logMessage.Level)
             {
                 case SyslogLevel.Debug:
