@@ -31,7 +31,7 @@ namespace Kafka.TestFramework
             return await RequestPayload
                 .ReadFromAsync(
                     Reader,
-                    cancellationToken)
+                    CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, NoMoreDataToRead).Token)
                 .ConfigureAwait(false);
         }
     }
