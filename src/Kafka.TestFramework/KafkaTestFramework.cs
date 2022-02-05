@@ -127,6 +127,11 @@ namespace Kafka.TestFramework
                         {
                             return;
                         }
+                        catch (OperationCanceledException)
+                        {
+                            _cancellationTokenSource.Cancel();
+                            return;
+                        }
                         catch
                         {
                             _cancellationTokenSource.Cancel();

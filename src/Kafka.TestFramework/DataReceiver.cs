@@ -34,7 +34,7 @@ namespace Kafka.TestFramework
 
                     if (bytesRead == 0)
                     {
-                        return;
+                        break;
                     }
 
                     Logger.Debug("Received {bytesRead} bytes", bytesRead);

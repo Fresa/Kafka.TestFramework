@@ -24,16 +24,30 @@ namespace Kafka.TestFramework
 
         public async ValueTask<int> SendAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            return await _socket
-                .SendAsync(buffer, SocketFlags.None, cancellationToken)
-                .ConfigureAwait(false);
+            try
+            {
+                return await _socket
+                    .SendAsync(buffer, SocketFlags.None, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            catch (SocketException) when (!_socket.Connected)
+            {
+                throw new OperationCanceledException(cancellationToken);
+            }
         }
 
         public async ValueTask<int> ReceiveAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            return await _socket
-                .ReceiveAsync(buffer, SocketFlags.None, cancellationToken)
-                .ConfigureAwait(false);
+            try
+            {
+                return await _socket
+                    .ReceiveAsync(buffer, SocketFlags.None, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            catch (SocketException) when (!_socket.Connected)
+            {
+                throw new OperationCanceledException(cancellationToken);
+            }
         }
     }
 }
