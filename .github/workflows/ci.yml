@@ -46,10 +46,26 @@ jobs:
     - name: Determine Release Info
       id: release
       run: |
-        from_tag=$(git tag --points-at ${{ steps.gitversion.outputs.versionSourceSha }} | grep -m 1 ^v[0-9]*\.[0-9]*\.[0-9]* | head -1)
-        [[ -z "$from_tag" ]] && \
-          from_ref_exclusive=${{ steps.gitversion.outputs.versionSourceSha }} || \
-          from_ref_exclusive=$from_tag
+        default_branch=$(git remote show origin | awk '/HEAD branch/ {print $NF}')
+
+        if [ "${{ github.ref_name }}" == "$default_branch" ]; then
+          # Extract the branch name of the branch that merged into the current commit
+          commit_subject=$(git log -1 --pretty=format:%s)
+          regex='Merge pull request #[0-9]+ from .+/(.+)$'
+          [[ $commit_subject =~ $regex ]]
+          merged_branch=${BASH_REMATCH[1]}
+          
+          [[ -z "$merged_branch" ]] && \
+            # Committed directly on default branch, use the previous commit
+            from_ref_exclusive=$(git log -2 --pretty=format:"%H" | tail -1)
+            # Find what commit the merged branch branched from originally
+            from_ref_exclusive=$(diff -u <(git rev-list --first-parent $merged_branch) \
+                    <(git rev-list --first-parent $default_branch) | \
+                sed -ne 's/^ //p' | head -1)
+        else
+          # Get the commit this branch branched from
+          from_ref_exclusive=$(git rev-list $(git rev-list $default_branch.. | tail -1)^ -n 1)
+        fi
 
         [[ -z "${{ steps.gitversion.outputs.preReleaseTag }}" ]] && \
           is_prerelease=false || \
