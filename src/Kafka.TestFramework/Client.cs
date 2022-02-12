@@ -42,52 +42,49 @@ namespace Kafka.TestFramework
                 {
                     var cancellationToken = _signalNoMoreDataToWrite.Token;
                     var writer = _pipe.Writer;
-                    await using (_networkClient.ConfigureAwait(false))
+                    try
                     {
-                        try
+                        FlushResult result;
+                        do
                         {
-                            FlushResult result;
-                            do
+                            var memory = writer.GetMemory(MinimumBufferSize);
+                            var bytesRead = await _networkClient.ReceiveAsync(
+                                    memory,
+                                    cancellationToken)
+                                .ConfigureAwait(false);
+
+                            if (bytesRead == 0)
                             {
-                                var memory = writer.GetMemory(MinimumBufferSize);
-                                var bytesRead = await _networkClient.ReceiveAsync(
-                                        memory,
-                                        cancellationToken)
-                                    .ConfigureAwait(false);
+                                break;
+                            }
 
-                                if (bytesRead == 0)
-                                {
-                                    break;
-                                }
+                            Logger.Debug("Received {bytesRead} bytes", bytesRead);
+                            writer.Advance(bytesRead);
 
-                                Logger.Debug("Received {bytesRead} bytes", bytesRead);
-                                writer.Advance(bytesRead);
-
-                                result = await writer
-                                    .FlushAsync(cancellationToken)
-                                    .ConfigureAwait(false);
-                            } while (result.IsCanceled == false &&
-                                     result.IsCompleted == false);
-                        }
-                        catch when (_signalNoMoreDataToWrite.IsCancellationRequested)
-                        {
-                            // Shutdown in progress
-                        }
-                        catch (OperationCanceledException)
-                        {
-                        }
-                        catch (Exception ex)
-                        {
-                            writer.Complete(ex);
-                            throw;
-                        }
-                        finally
-                        {
-                            _signalNoMoreDataToWrite.Cancel();
-                        }
-
-                        writer.Complete();
+                            result = await writer
+                                .FlushAsync(cancellationToken)
+                                .ConfigureAwait(false);
+                        } while (result.IsCanceled == false &&
+                                 result.IsCompleted == false);
                     }
+                    catch when (_signalNoMoreDataToWrite.IsCancellationRequested)
+                    {
+                        // Shutdown in progress
+                    }
+                    catch (OperationCanceledException)
+                    {
+                    }
+                    catch (Exception ex)
+                    {
+                        writer.Complete(ex);
+                        throw;
+                    }
+                    finally
+                    {
+                        _signalNoMoreDataToWrite.Cancel();
+                    }
+
+                    writer.Complete();
                 });
         }
 
@@ -97,6 +94,8 @@ namespace Kafka.TestFramework
             _signalNoMoreDataToRead.Cancel();
 
             await _sendAndReceiveBackgroundTask
+                .ConfigureAwait(false);
+            await _networkClient.DisposeAsync()
                 .ConfigureAwait(false);
         }
     }

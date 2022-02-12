@@ -192,11 +192,13 @@ namespace Kafka.TestFramework
             {
                 _testFramework = testFramework;
             }
-            public async ValueTask DisposeAsync()
+
+            public ValueTask DisposeAsync()
             {
                 _testFramework._cancellationTokenSource.Cancel();
-                await Task.WhenAll(_testFramework._backgroundTasks)
-                    .ConfigureAwait(false);
+                return Task.WhenAll(_testFramework._backgroundTasks)
+                    .ThrowAllExceptions()
+                    .AsValueTask();
             }
         }
     }
