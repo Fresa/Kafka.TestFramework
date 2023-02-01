@@ -8,7 +8,6 @@ using Confluent.Kafka;
 using FluentAssertions;
 using Kafka.Protocol;
 using Kafka.Protocol.Records;
-using Log.It;
 using Xunit;
 using Xunit.Abstractions;
 using Int32 = Kafka.Protocol.Int32;
@@ -21,7 +20,8 @@ namespace Kafka.TestFramework.Tests
         public class When_connecting_to_the_server_and_consuming_a_message : TestSpecificationAsync
         {
             private SocketBasedKafkaTestFramework _testServer;
-            private ConsumeResult<Ignore, string> _result;
+            private readonly List<string> _result = new List<string>();
+            private const int NumberOfMessage = 5;
 
             public When_connecting_to_the_server_and_consuming_a_message(
                 ITestOutputHelper testOutputHelper)
@@ -99,26 +99,51 @@ namespace Kafka.TestFramework.Tests
                         Array.Empty<Func<OffsetFetchResponse.OffsetFetchResponseTopic,
                             OffsetFetchResponse.OffsetFetchResponseTopic>>()));
 
-                _testServer.On<FetchRequest, FetchResponse>(request => request.Respond()
-                    .WithResponsesCollection(
-                        request.TopicsCollection.Select(topic =>
-                            new Func<FetchResponse.FetchableTopicResponse, FetchResponse.FetchableTopicResponse>(
-                                response => response
-                                    .WithTopic(topic.Topic)
-                                    .WithPartitionsCollection(topic.PartitionsCollection.Select(partition =>
-                                            new Func<FetchResponse.FetchableTopicResponse.PartitionData,
-                                                FetchResponse.FetchableTopicResponse.PartitionData>(data => data
-                                                .WithRecords(new NullableRecordBatch
+                var records = new Dictionary<long, Record>();
+                for (var i = 0; i < NumberOfMessage; i++)
+                {
+                    records.Add(i, new Record
+                    {
+                        OffsetDelta = i,
+                        Value = Encoding.UTF8.GetBytes(
+                            $"data{i} fetched from broker")
+                    });
+                }
+
+                _testServer.On<FetchRequest, FetchResponse>(async (request, cancellationToken) =>
+                {
+                    var returnsData = false;
+                    var response = request.Respond()
+                        .WithResponsesCollection(
+                            request.TopicsCollection.Select(topic =>
+                                new Func<FetchResponse.FetchableTopicResponse, FetchResponse.FetchableTopicResponse>(
+                                    response => response
+                                        .WithTopic(topic.Topic)
+                                        .WithPartitionsCollection(topic.PartitionsCollection.Select(partition =>
+                                                new Func<FetchResponse.FetchableTopicResponse.PartitionData,
+                                                    FetchResponse.FetchableTopicResponse.PartitionData>(data =>
                                                 {
-                                                    Magic = 2,
-                                                    Records = new NullableArray<Record>(new Record
+                                                    var recordBatch = new NullableRecordBatch
                                                     {
-                                                        Value = Encoding.UTF8.GetBytes(
-                                                            "data fetched from broker"),
-                                                    })
-                                                }))).ToArray()
-                                    ))).ToArray())
-                );
+                                                        LastOffsetDelta = (int)partition.FetchOffset,
+                                                        Magic = 2,
+                                                        Records = records.TryGetValue(partition.FetchOffset.Value,
+                                                            out var record)
+                                                            ? new NullableArray<Record>(record)
+                                                            : NullableArray<Record>.Default
+                                                    };
+                                                    returnsData = recordBatch.Records != NullableArray<Record>.Default;
+                                                    return returnsData ? data.WithRecords(recordBatch) : data;
+                                                })).ToArray()
+                                        ))).ToArray());
+                    if (!returnsData)
+                    {
+                        await Task.Delay(request.MaxWaitMs, cancellationToken)
+                            .ConfigureAwait(false);
+                    }
+
+                    return response;
+                });
 
                 _testServer.On<OffsetCommitRequest, OffsetCommitResponse>(request => request.Respond()
                     .WithTopicsCollection(request.TopicsCollection.Select(topic =>
@@ -145,17 +170,21 @@ namespace Kafka.TestFramework.Tests
                 await using (_testServer.Start()
                     .ConfigureAwait(false))
                 {
-                    _result = ConsumeMessage("localhost", _testServer.Port, _testServer.Stopping);
+                    ConsumeMessages("localhost", _testServer.Port, _testServer.Stopping);
                 }
             }
 
             [Fact]
-            public void It_should_have_read_the_message_sent()
+            public void It_should_have_read_the_messages_sent()
             {
-                _result.Message.Value.Should().Be("data fetched from broker");
+                _result.Should().HaveCount(NumberOfMessage);
+                for (var i = 0; i < NumberOfMessage; i++)
+                {
+                    _result.Should().Contain($"data{i} fetched from broker");
+                }
             }
 
-            private ConsumeResult<Ignore, string> ConsumeMessage(string host,
+            private void ConsumeMessages(string host,
                 int port, CancellationToken testServerStopping)
             {
                 var consumerConfig = new ConsumerConfig(new Dictionary<string, string>
@@ -166,7 +195,7 @@ namespace Kafka.TestFramework.Tests
                     BootstrapServers = $"{host}:{port}",
                     ApiVersionRequestTimeoutMs = 30000,
                     Debug = "all",
-                    GroupId = "group1"
+                    GroupId = "group1",
                 };
 
                 using var consumer = new ConsumerBuilder<Ignore, string>(consumerConfig)
@@ -176,12 +205,17 @@ namespace Kafka.TestFramework.Tests
                 consumer.Subscribe("topic1");
                 var cancellationToken = CancellationTokenSource
                     .CreateLinkedTokenSource(testServerStopping, TimeoutCancellationToken).Token;
-                var result = consumer.Consume(cancellationToken);
-                consumer.Close();
-
-                LogFactory.Create("consumer").Info("Consumer consumed {@result}", result);
-
-                return result;
+                try
+                {
+                    for (var i = 0; i < NumberOfMessage; i++)
+                    {
+                        _result.Add(consumer.Consume(cancellationToken).Message.Value);
+                    }
+                }
+                finally
+                {
+                    consumer.Close();
+                }
             }
         }
     }
