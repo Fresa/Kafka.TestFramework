@@ -4,6 +4,9 @@ on:
   push:
     branches: 
       - '**'
+env:
+  project_path: src/Kafka.TestFramework
+  project_name: Kafka.TestFramework
 
 jobs:
   test:
@@ -14,112 +17,84 @@ jobs:
       matrix:
         os: [ubuntu-latest]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Setup .NET
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 3.1.x
+        dotnet-version: 7.0.x
     - name: Build
       run: dotnet build -c Release
     - name: Test
       run: dotnet test -c Release --no-build --verbosity normal
 
-  release:    
+  release:
     name: Create Release
     needs: [test]
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-      with:
-        # Fetches entire history, so we can analyze commits since last tag
-        fetch-depth: 0
-    - name: Install GitVersion
-      uses: gittools/actions/gitversion/setup@v0.9.7
-      with:
-        versionSpec: '5.x'
-    - name: Determine Version
-      id: gitversion
-      uses: gittools/actions/gitversion/execute@v0
-      with:
-        useConfigFile: true
-        configFilePath: .github/version_config.yml
-    - name: Determine Release Info
-      id: release
-      run: |
-        default_branch=$(git remote show origin | awk '/HEAD branch/ {print $NF}')
+      - uses: actions/checkout@v3
+        with:
+          # Fetches entire history, so we can analyze commits since last tag
+          fetch-depth: 0
+      - name: Determine Release Versioning
+        id: versioning
+        uses: Fresa/trunk-based-release-versioning@v0
+      - name: Determine Release Version
+        id: release-tag
+        run: |
+          version=${{ steps.versioning.outputs.version }}
+          if ${{ steps.versioning.outputs.is-prerelease }}; then
+            version="$version-pre-$(echo ${{ steps.versioning.outputs.release-ref }} | cut -c1-8)"
+          fi
 
-        if [ "${{ github.ref_name }}" == "$default_branch" ]; then
-          # Extract the branch name of the branch that merged into the current commit
-          commit_subject=$(git log -1 --pretty=format:%s)
-          regex='Merge pull request #[0-9]+ from .+/(.+)$'
-          [[ $commit_subject =~ $regex ]]
-          merged_branch=${BASH_REMATCH[1]}
-          
-          [[ -z "$merged_branch" ]] && \
-            # Committed directly on default branch, use the previous commit
-            from_ref_exclusive=$(git log -2 --pretty=format:"%H" | tail -1)
-            # Find what commit the merged branch branched from originally
-            from_ref_exclusive=$(diff -u <(git rev-list --first-parent $merged_branch) \
-                    <(git rev-list --first-parent $default_branch) | \
-                sed -ne 's/^ //p' | head -1)
-        else
-          # Get the commit this branch branched from
-          from_ref_exclusive=$(git rev-list $(git rev-list $default_branch.. | tail -1)^ -n 1)
-        fi
-
-        [[ -z "${{ steps.gitversion.outputs.preReleaseTag }}" ]] && \
-          is_prerelease=false || \
-          is_prerelease=true
-
-        [[ $is_prerelease == true ]] && \
-          version=${{ steps.gitversion.outputs.majorMinorPatch }}-pre-${{ steps.gitversion.outputs.commitsSinceVersionSource }} || \
-          version=${{ steps.gitversion.outputs.majorMinorPatch }}
-
-        echo "::set-output name=is_prerelease::$is_prerelease"
-        echo "::set-output name=tag::v$version"
-        echo "::set-output name=version::$version"
-        echo "::set-output name=from_ref_exclusive::$from_ref_exclusive"
-    - name: Create Tag
-      uses: actions/github-script@v3
-      with:
-        script: |
-          github.git.createRef({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            ref: "refs/tags/${{ steps.release.outputs.tag }}",
-            sha: "${{ steps.gitversion.outputs.sha }}"
-          });
-    - name: Generate Release Notes
-      id: release_notes
-      uses: Fresa/release-notes-generator@v0
-      with:
-          version: ${{ steps.release.outputs.tag }}
-          from_ref_exclusive: ${{ steps.release.outputs.from_ref_exclusive }}
-          to_ref_inclusive: ${{ steps.release.outputs.tag }}
-    - name: Create Release
-      id: create_release
-      uses: softprops/action-gh-release@v1
-      with:
-          body: ${{ steps.release_notes.outputs.release_notes }}
-          tag_name: ${{ steps.release.outputs.tag }}
-          prerelease: ${{ steps.release.outputs.is_prerelease }}
-      env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    - name: Update Latest Minor Tag
-      uses: EndBug/latest-tag@v1
-      if: steps.release.outputs.is_prerelease == 'false'
-      with:
-          tag-name: v${{ steps.gitversion.outputs.major }}
-          description: ${{ steps.release.outputs.tag }}
-    - name: Update Latest Patch Tag
-      uses: EndBug/latest-tag@v1
-      if: steps.release.outputs.is_prerelease == 'false'
-      with:
-          tag-name: v${{ steps.gitversion.outputs.major }}.${{ steps.gitversion.outputs.minor }}
-          description: ${{ steps.release.outputs.tag }}
-    - name: Pack
-      env:
+          echo "tag=v$version" >> $GITHUB_OUTPUT
+          echo "version=$version" >> $GITHUB_OUTPUT
+      - name: Convert Commit Logs to JSON
+        id: convert-commit-logs
+        uses: mikefarah/yq@v4.30.6
+        with:
+          cmd: yq ea -o=json 'select(. != null) | [.]' "$(echo "${{ steps.versioning.outputs.commit-logs-path }}" | sed "s|^${{ github.workspace }}/||")" | tee commit_logs.json
+      - name: Generate Release Notes
+        id: release_notes
+        uses: Fresa/release-notes-generator@v2
+        with:
+          version: ${{ steps.release-tag.outputs.tag }}
+          last_release_ref: ${{ steps.versioning.outputs.last-release-ref }}
+          release_ref: ${{ steps.versioning.outputs.release-ref }}
+          path_to_commits: ./commit_logs.json
+      - name: Pack
+        env:
           release_notes: ${{ steps.release_notes.outputs.release_notes }}
-      run: dotnet pack src/Kafka.TestFramework/Kafka.TestFramework.csproj -c Release -o nuget-packages -p:PackageVersion=${{ steps.release.outputs.version }} -p:PackageReleaseNotes="$release_notes"
-    - name: Publish to nuget.org
-      run: dotnet nuget push nuget-packages/Kafka.TestFramework.${{ steps.release.outputs.version }}.nupkg --api-key ${{secrets.NUGET_API_KEY}} --source https://api.nuget.org/v3/index.json
+        run: dotnet pack ${{ env.project_path }}/${{ env.project_name }}.csproj -c Release -o nuget-packages -p:PackageVersion=${{ steps.release-tag.outputs.version }} -p:PackageReleaseNotes="$release_notes"
+      - name: Create Tag
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: "refs/tags/${{ steps.release-tag.outputs.tag }}",
+              sha: "${{ steps.versioning.outputs.release-ref }}"
+            });
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body: ${{ steps.release_notes.outputs.release_notes }}
+          tag_name: ${{ steps.release-tag.outputs.tag }}
+          prerelease: ${{ steps.versioning.outputs.is-prerelease }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Update Latest Minor Tag
+        uses: EndBug/latest-tag@v1
+        if: steps.versioning.outputs.is-prerelease == 'false'
+        with:
+          ref: v${{ steps.versioning.outputs.major-version }}
+          description: ${{ steps.release-tag.outputs.tag }}
+      - name: Update Latest Patch Tag
+        uses: EndBug/latest-tag@v1
+        if: steps.versioning.outputs.is-prerelease == 'false'
+        with:
+          ref: v${{ steps.versioning.outputs.major-version }}.${{ steps.versioning.outputs.minor-version }}
+          description: ${{ steps.release-tag.outputs.tag }}
+      - name: Publish to nuget.org
+        run: dotnet nuget push nuget-packages/${{ env.project_name }}.${{ steps.release-tag.outputs.version }}.nupkg --api-key ${{secrets.NUGET_API_KEY}} --source https://api.nuget.org/v3/index.json
