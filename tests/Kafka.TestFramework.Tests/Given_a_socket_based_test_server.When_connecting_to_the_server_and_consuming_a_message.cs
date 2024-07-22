@@ -10,8 +10,10 @@ using Kafka.Protocol;
 using Kafka.Protocol.Records;
 using Xunit;
 using Xunit.Abstractions;
+using static Kafka.Protocol.OffsetFetchResponse;
 using Int32 = Kafka.Protocol.Int32;
 using Record = Kafka.Protocol.Records.Record;
+using Uuid = Kafka.Protocol.Uuid;
 
 namespace Kafka.TestFramework.Tests
 {
@@ -37,6 +39,7 @@ namespace Kafka.TestFramework.Tests
                     request => request.Respond()
                         .WithAllApiKeys());
 
+                var topicId = Uuid.From(Guid.NewGuid());
                 _testServer.On<MetadataRequest, MetadataResponse>(
                     request => request.Respond()
                         .WithTopicsCollection(
@@ -46,6 +49,7 @@ namespace Kafka.TestFramework.Tests
                                         responseTopic =>
                                             responseTopic
                                                 .WithName(topic.Name)
+                                                .WithTopicId(topicId)
                                                 .WithPartitionsCollection(partition =>
                                                     partition
                                                         .WithLeaderId(0)
@@ -80,24 +84,33 @@ namespace Kafka.TestFramework.Tests
                 );
 
                 _testServer.On<OffsetFetchRequest, OffsetFetchResponse>(request => request.Respond()
-                    .WithTopicsCollection(
-                        request.TopicsCollection?.Select(topic =>
-                                new Func<OffsetFetchResponse.OffsetFetchResponseTopic,
-                                    OffsetFetchResponse.OffsetFetchResponseTopic>(responseTopic =>
-                                    responseTopic
-                                        .WithName(topic.Name)
-                                        .WithPartitionsCollection(topic.PartitionIndexesCollection
-                                            .Select(partitionIndex =>
-                                                new Func<OffsetFetchResponse.OffsetFetchResponseTopic.
-                                                    OffsetFetchResponsePartition,
-                                                    OffsetFetchResponse.OffsetFetchResponseTopic.
-                                                    OffsetFetchResponsePartition>(
-                                                    partition => partition
-                                                        .WithPartitionIndex(partitionIndex)))
-                                            .ToArray())))
-                            .ToArray() ??
-                        Array.Empty<Func<OffsetFetchResponse.OffsetFetchResponseTopic,
-                            OffsetFetchResponse.OffsetFetchResponseTopic>>()));
+                    .WithGroupsCollection(request.GroupsCollection.Select(group =>
+                        new Func<OffsetFetchResponseGroup, OffsetFetchResponseGroup>(offsetFetchResponseGroup =>
+                            offsetFetchResponseGroup
+                                .WithGroupId(group.GroupId)
+                                .WithTopicsCollection(
+                                    group.TopicsCollection?
+                                        .Select(topic =>
+                                            new Func<OffsetFetchResponseGroup.OffsetFetchResponseTopics,
+                                                OffsetFetchResponseGroup.OffsetFetchResponseTopics>(
+                                                responseTopic =>
+                                                    responseTopic
+                                                        .WithName(topic.Name)
+                                                        .WithPartitionsCollection(topic
+                                                            .PartitionIndexesCollection
+                                                            .Select(partitionIndex =>
+                                                                new Func<OffsetFetchResponseGroup.
+                                                                    OffsetFetchResponseTopics.
+                                                                    OffsetFetchResponsePartitions,
+                                                                    OffsetFetchResponseGroup.
+                                                                    OffsetFetchResponseTopics.
+                                                                    OffsetFetchResponsePartitions>(
+                                                                    partition => partition
+                                                                        .WithPartitionIndex(partitionIndex)))
+                                                            .ToArray())))
+                                        .ToArray() ??
+                                    Array.Empty<Func<OffsetFetchResponseGroup.OffsetFetchResponseTopics,
+                                        OffsetFetchResponseGroup.OffsetFetchResponseTopics>>()))).ToArray()));
 
                 var records = new Dictionary<long, Record>();
                 for (var i = 0; i < NumberOfMessage; i++)
@@ -118,11 +131,16 @@ namespace Kafka.TestFramework.Tests
                             request.TopicsCollection.Select(topic =>
                                 new Func<FetchResponse.FetchableTopicResponse, FetchResponse.FetchableTopicResponse>(
                                     response => response
-                                        .WithTopic(topic.Topic)
+                                        .WithTopicId(topic.TopicId)
                                         .WithPartitionsCollection(topic.PartitionsCollection.Select(partition =>
                                                 new Func<FetchResponse.FetchableTopicResponse.PartitionData,
                                                     FetchResponse.FetchableTopicResponse.PartitionData>(data =>
                                                 {
+                                                    data.WithCurrentLeader(epoch => epoch
+                                                            .WithLeaderEpoch(epoch.LeaderEpoch)
+                                                            .WithLeaderId(0))
+                                                        .WithPartitionIndex(partition.Partition)
+                                                        .WithHighWatermark(NumberOfMessage - 1);
                                                     var recordBatch = new NullableRecordBatch
                                                     {
                                                         LastOffsetDelta = (int)partition.FetchOffset,
@@ -162,6 +180,8 @@ namespace Kafka.TestFramework.Tests
                 _testServer.On<LeaveGroupRequest, LeaveGroupResponse>(request => request.Respond());
                 _testServer.On<HeartbeatRequest, HeartbeatResponse>(request => request.Respond());
 
+                _testServer.On<GetTelemetrySubscriptionsRequest, GetTelemetrySubscriptionsResponse>(request => request.Respond()
+                    .WithPushIntervalMs(1000));
                 return Task.CompletedTask;
             }
 
@@ -196,10 +216,11 @@ namespace Kafka.TestFramework.Tests
                     ApiVersionRequestTimeoutMs = 30000,
                     Debug = "all",
                     GroupId = "group1",
+                    LogThreadName = false
                 };
 
                 using var consumer = new ConsumerBuilder<Ignore, string>(consumerConfig)
-                    .SetLogHandler(LogExtensions.UseLogIt)
+                    .SetLogHandler(this.Log)
                     .Build();
 
                 consumer.Subscribe("topic1");
