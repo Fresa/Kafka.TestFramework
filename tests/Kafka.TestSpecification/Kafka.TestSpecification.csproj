@@ -7,13 +7,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Confluent.Kafka" Version="1.8.2" />
+    <PackageReference Include="Confluent.Kafka" Version="1.1.0" />
     <PackageReference Include="FluentAssertions" Version="5.9.0" />
-    <PackageReference Include="Kafka.Protocol" Version="2.0.3" />
     <PackageReference Include="Log.It.With.NLog" Version="2.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="3.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="3.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.0.1" />
+    <PackageReference Include="NLog" Version="5.3.2" />
+    <PackageReference Include="NLog.Extensions.Logging" Version="5.3.11" />
     <PackageReference Include="System.Linq.Async" Version="4.1.1" />
     <PackageReference Include="Test.It" Version="2.2.0" />
     <PackageReference Include="Test.It.With.XUnit" Version="2.2.4" />
@@ -22,9 +23,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\Kafka.Protocol\Kafka.Protocol\Kafka.Protocol.csproj" />
     <ProjectReference Include="..\..\src\Kafka.TestFramework\Kafka.TestFramework.csproj" />
-    <ProjectReference Include="..\Kafka.TestFramework\Kafka.TestSpecification.csproj" />
-    <ProjectReference Include="..\Kafka.TestSpecification\Kafka.TestSpecification.csproj" />
   </ItemGroup>
 
   <ItemGroup>

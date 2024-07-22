@@ -1,50 +1,29 @@
 ﻿using System;
 using Confluent.Kafka;
-using Log.It;
 
 namespace Kafka.TestFramework.Tests
 {
     internal static class LogExtensions
     {
-        internal static void UseLogIt<TKey, TValue>(
+        internal static void Log<TKey, TValue>(this TestSpecificationAsync test,
             IProducer<TKey, TValue> producer, LogMessage logMessage)
         {
-            var logger = LogFactory.Create(producer.GetType().GetPrettyName());
+            test.Log(logMessage);
+        }
 
-            switch (logMessage.Level)
-            {
-                case SyslogLevel.Debug:
-                    LogTo(logger.Debug);
-                    break;
-                case SyslogLevel.Notice:
-                case SyslogLevel.Info:
-                    LogTo(logger.Info);
-                    break;
-                case SyslogLevel.Warning:
-                    LogTo(logger.Warning);
-                    break;
-                case SyslogLevel.Error:
-                    LogTo(logger.Error);
-                    break;
-                case SyslogLevel.Alert:
-                case SyslogLevel.Critical:
-                case SyslogLevel.Emergency:
-                    LogTo(logger.Fatal);
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException($"{logMessage.Level} is not supported");
-            }
+        internal static void Log<TKey, TValue>(this TestSpecificationAsync test,
+            IConsumer<TKey, TValue> consumer, LogMessage logMessage)
+        {
+            test.Log(logMessage);
+        }
 
-            void LogTo(Action<string, object[]> log)
-            {
-                log("{name} {facility}: {message}",
-                    new object[]
-                    {
-                        logMessage.Name,
-                        logMessage.Facility,
-                        logMessage.Message
-                    });
-            }
+        private static void Log(this TestSpecificationAsync test,
+            LogMessage logMessage)
+        {
+            test.WriteKafkaLogMessage(logMessage.Name,
+                logMessage.Facility,
+                Enum.GetName(logMessage.Level),
+                logMessage.Message);
         }
     }
 }

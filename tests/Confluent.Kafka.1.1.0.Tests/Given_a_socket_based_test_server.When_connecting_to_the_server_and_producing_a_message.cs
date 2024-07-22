@@ -113,7 +113,7 @@ namespace Kafka.TestFramework.Tests
                 _records.First().Value.EncodeToString(Encoding.UTF8).Should().Be("test");
             }
 
-            private static async Task ProduceMessageFromClientAsync(string host,
+            private async Task ProduceMessageFromClientAsync(string host,
                 int port, CancellationToken testServerStopping)
             {
                 var producerConfig = new ProducerConfig(new Dictionary<string, string>
@@ -129,12 +129,12 @@ namespace Kafka.TestFramework.Tests
 
                 using var producer =
                     new ProducerBuilder<Null, string>(producerConfig)
-                        .SetLogHandler(LogExtensions.UseLogIt)
+                        .SetLogHandler(this.Log)
                         .Build();
 
                 var report = await producer
                     .ProduceAsync("my-topic",
-                        new Message<Null, string> { Value = "test" })
+                        new Message<Null, string> { Value = "test" }, testServerStopping)
                     .ConfigureAwait(false);
                 LogFactory.Create("producer").Info("Produce report {@report}", report);
 
