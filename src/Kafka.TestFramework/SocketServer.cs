@@ -57,7 +57,27 @@ namespace Kafka.TestFramework
                             var clientSocket = await _clientAcceptingSocket
                                 .AcceptAsync()
                                 .ConfigureAwait(false);
-                            Logger.Debug("Client connected {@clientSocket}", clientSocket);
+                            Logger.Debug("Client connected {@clientSocket}", new
+                            {
+                                clientSocket.AddressFamily,
+                                clientSocket.Available,
+                                clientSocket.Connected,
+                                clientSocket.ProtocolType,
+                                clientSocket.ReceiveTimeout,
+                                clientSocket.ReceiveBufferSize,
+                                clientSocket.Ttl,
+                                clientSocket.SendBufferSize,
+                                clientSocket.SendTimeout,
+                                RemoteEndPoint = new
+                                {
+                                    clientSocket.RemoteEndPoint.AddressFamily
+                                },
+                                clientSocket.SocketType,
+                                LocalEndPoint = new
+                                {
+                                    clientSocket.LocalEndPoint.AddressFamily
+                                } 
+                            });
 
                             await _waitingClients
                                 .SendAsync(
