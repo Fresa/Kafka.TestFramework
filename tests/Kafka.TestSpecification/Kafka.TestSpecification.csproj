@@ -23,7 +23,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Kafka.Protocol\Kafka.Protocol\Kafka.Protocol.csproj" />
     <ProjectReference Include="..\..\src\Kafka.TestFramework\Kafka.TestFramework.csproj" />
   </ItemGroup>
 
