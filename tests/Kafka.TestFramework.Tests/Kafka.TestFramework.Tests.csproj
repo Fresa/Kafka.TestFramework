@@ -9,7 +9,7 @@
   <ItemGroup>
     <PackageReference Include="Confluent.Kafka" Version="2.5.0" />
     <PackageReference Include="FluentAssertions" Version="5.9.0" />
-    <PackageReference Include="Kafka.Protocol" Version="2.0.3" />
+    <PackageReference Include="Kafka.Protocol" Version="5.1.0" />
     <PackageReference Include="Log.It.With.NLog" Version="2.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="3.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="3.0.0" />
