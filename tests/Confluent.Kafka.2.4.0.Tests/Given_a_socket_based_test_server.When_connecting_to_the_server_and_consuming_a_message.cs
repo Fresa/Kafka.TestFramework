@@ -131,16 +131,11 @@ namespace Kafka.TestFramework.Tests
                             request.TopicsCollection.Select(topic =>
                                 new Func<FetchResponse.FetchableTopicResponse, FetchResponse.FetchableTopicResponse>(
                                     response => response
-                                        .WithTopicId(topic.TopicId)
+                                        .WithTopic(topic.Topic)
                                         .WithPartitionsCollection(topic.PartitionsCollection.Select(partition =>
                                                 new Func<FetchResponse.FetchableTopicResponse.PartitionData,
                                                     FetchResponse.FetchableTopicResponse.PartitionData>(data =>
                                                 {
-                                                    data.WithCurrentLeader(epoch => epoch
-                                                            .WithLeaderEpoch(epoch.LeaderEpoch)
-                                                            .WithLeaderId(0))
-                                                        .WithPartitionIndex(partition.Partition)
-                                                        .WithHighWatermark(NumberOfMessage - 1);
                                                     var recordBatch = new NullableRecordBatch
                                                     {
                                                         LastOffsetDelta = (int)partition.FetchOffset,
@@ -180,8 +175,6 @@ namespace Kafka.TestFramework.Tests
                 _testServer.On<LeaveGroupRequest, LeaveGroupResponse>(request => request.Respond());
                 _testServer.On<HeartbeatRequest, HeartbeatResponse>(request => request.Respond());
 
-                _testServer.On<GetTelemetrySubscriptionsRequest, GetTelemetrySubscriptionsResponse>(request => request.Respond()
-                    .WithPushIntervalMs(1000));
                 return Task.CompletedTask;
             }
 

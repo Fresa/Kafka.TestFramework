@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 
-namespace Kafka.TestFramework.Tests
+namespace Kafka.TestFramework
 {
     internal static class ObjectExtensions
     {

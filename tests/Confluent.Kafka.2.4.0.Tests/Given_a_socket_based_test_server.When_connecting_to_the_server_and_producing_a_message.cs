@@ -88,8 +88,6 @@ namespace Kafka.TestFramework.Tests
                             .ToArray());
                 });
 
-                _testServer.On<GetTelemetrySubscriptionsRequest, GetTelemetrySubscriptionsResponse>(request => request.Respond()
-                    .WithPushIntervalMs(1000));
                 return Task.CompletedTask;
             }
 
